@@ -138,6 +138,9 @@ function initializeDragAndDrop() {
 }
 
 function addElementToCanvas(elementType, x, y) {
+    // Save current state before making changes
+    saveCanvasState();
+    
     const canvas = document.getElementById('website-canvas');
     const placeholder = canvas.querySelector('.canvas-placeholder');
     
@@ -158,6 +161,7 @@ function addElementToCanvas(elementType, x, y) {
     element.style.background = 'white';
     element.style.cursor = 'move';
     element.setAttribute('data-element-type', elementType);
+    element.setAttribute('data-element-id', 'element-' + Date.now());
     
     // Set element content based on type
     switch (elementType) {
@@ -178,8 +182,16 @@ function addElementToCanvas(elementType, x, y) {
     // Add click handler for selection
     element.addEventListener('click', () => selectElement(element));
     
+    // Add double-click handler for deletion
+    element.addEventListener('dblclick', () => {
+        saveCanvasState();
+        element.remove();
+        updateCanvasElements();
+        showNotification('Element deleted');
+    });
+    
     canvas.appendChild(element);
-    canvasElements.push(element);
+    updateCanvasElements();
     
     showNotification(`${elementType} added to canvas`);
 }
@@ -200,20 +212,76 @@ function selectElement(element) {
 function showElementProperties(element) {
     const propertiesContent = document.querySelector('.properties-content');
     const elementType = element.getAttribute('data-element-type');
+    const elementId = element.getAttribute('data-element-id') || 'selected';
     
     propertiesContent.innerHTML = `
         <h4>Properties - ${elementType}</h4>
-        <div class="property-group">
-            <label>Background Color:</label>
-            <input type="color" class="property-input" value="#ffffff" onchange="updateElementStyle('${element.id || 'selected'}', 'backgroundColor', this.value)">
+        
+        <!-- Styling Properties -->
+        <div class="property-section">
+            <h5>Styling</h5>
+            <div class="property-group">
+                <label>Background Color:</label>
+                <input type="color" class="property-input" value="#ffffff" onchange="updateElementStyle('${elementId}', 'backgroundColor', this.value)">
+            </div>
+            <div class="property-group">
+                <label>Width (px):</label>
+                <input type="number" class="property-input" value="200" onchange="updateElementStyle('${elementId}', 'width', this.value + 'px')">
+            </div>
+            <div class="property-group">
+                <label>Height (px):</label>
+                <input type="number" class="property-input" value="100" onchange="updateElementStyle('${elementId}', 'height', this.value + 'px')">
+            </div>
+            <div class="property-group">
+                <label>Border Radius (px):</label>
+                <input type="number" class="property-input" value="4" onchange="updateElementStyle('${elementId}', 'borderRadius', this.value + 'px')">
+            </div>
         </div>
-        <div class="property-group">
-            <label>Width (px):</label>
-            <input type="number" class="property-input" value="200" onchange="updateElementStyle('${element.id || 'selected'}', 'width', this.value + 'px')">
+        
+        <!-- Animation Properties -->
+        <div class="property-section">
+            <h5>Animations</h5>
+            <div class="property-group">
+                <label>Animation Type:</label>
+                <select class="property-input" onchange="applyAnimation('${elementId}', this.value)">
+                    <option value="">None</option>
+                    <option value="fadeIn">Fade In</option>
+                    <option value="slideInLeft">Slide In Left</option>
+                    <option value="slideInRight">Slide In Right</option>
+                    <option value="bounceIn">Bounce In</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="shake">Shake</option>
+                </select>
+            </div>
+            <div class="property-group">
+                <label>Animation Duration (s):</label>
+                <input type="number" class="property-input" value="1" step="0.1" min="0.1" max="5" onchange="setAnimationDuration('${elementId}', this.value)">
+            </div>
+            <div class="property-group">
+                <label>Animation Delay (s):</label>
+                <input type="number" class="property-input" value="0" step="0.1" min="0" max="5" onchange="setAnimationDelay('${elementId}', this.value)">
+            </div>
+            <button class="btn-secondary" onclick="previewAnimation('${elementId}')">Preview Animation</button>
         </div>
-        <div class="property-group">
-            <label>Height (px):</label>
-            <input type="number" class="property-input" value="100" onchange="updateElementStyle('${element.id || 'selected'}', 'height', this.value + 'px')">
+        
+        <!-- Position Properties -->
+        <div class="property-section">
+            <h5>Position</h5>
+            <div class="property-group">
+                <label>X Position (px):</label>
+                <input type="number" class="property-input" value="${parseInt(element.style.left) || 0}" onchange="updateElementStyle('${elementId}', 'left', this.value + 'px')">
+            </div>
+            <div class="property-group">
+                <label>Y Position (px):</label>
+                <input type="number" class="property-input" value="${parseInt(element.style.top) || 0}" onchange="updateElementStyle('${elementId}', 'top', this.value + 'px')">
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="property-section">
+            <h5>Actions</h5>
+            <button class="btn-secondary" onclick="duplicateElement('${elementId}')">Duplicate</button>
+            <button class="btn-secondary" onclick="deleteElement('${elementId}')" style="background: #dc3545; color: white;">Delete</button>
         </div>
     `;
 }
@@ -221,11 +289,11 @@ function showElementProperties(element) {
 function initializeToolbar() {
     // Undo/Redo functionality
     document.getElementById('undo-btn').addEventListener('click', () => {
-        showNotification('Undo functionality coming soon!');
+        performUndo();
     });
     
     document.getElementById('redo-btn').addEventListener('click', () => {
-        showNotification('Redo functionality coming soon!');
+        performRedo();
     });
     
     // Device selector
@@ -273,6 +341,102 @@ function initializeCodeEditor() {
     });
 }
 
+// Undo/Redo History Management
+function saveCanvasState() {
+    const canvas = document.getElementById('website-canvas');
+    const state = {
+        html: canvas.innerHTML,
+        timestamp: Date.now()
+    };
+    
+    undoStack.push(state);
+    
+    // Limit undo stack size to prevent memory issues
+    if (undoStack.length > 50) {
+        undoStack.shift();
+    }
+    
+    // Clear redo stack when new action is performed
+    redoStack = [];
+    
+    updateUndoRedoButtons();
+}
+
+function performUndo() {
+    if (undoStack.length === 0) {
+        showNotification('Nothing to undo');
+        return;
+    }
+    
+    const canvas = document.getElementById('website-canvas');
+    const currentState = {
+        html: canvas.innerHTML,
+        timestamp: Date.now()
+    };
+    
+    redoStack.push(currentState);
+    const previousState = undoStack.pop();
+    
+    canvas.innerHTML = previousState.html;
+    restoreEventListeners();
+    updateCanvasElements();
+    updateUndoRedoButtons();
+    
+    showNotification('Undo performed');
+}
+
+function performRedo() {
+    if (redoStack.length === 0) {
+        showNotification('Nothing to redo');
+        return;
+    }
+    
+    const canvas = document.getElementById('website-canvas');
+    const currentState = {
+        html: canvas.innerHTML,
+        timestamp: Date.now()
+    };
+    
+    undoStack.push(currentState);
+    const nextState = redoStack.pop();
+    
+    canvas.innerHTML = nextState.html;
+    restoreEventListeners();
+    updateCanvasElements();
+    updateUndoRedoButtons();
+    
+    showNotification('Redo performed');
+}
+
+function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    
+    undoBtn.disabled = undoStack.length === 0;
+    redoBtn.disabled = redoStack.length === 0;
+    
+    undoBtn.style.opacity = undoStack.length === 0 ? '0.5' : '1';
+    redoBtn.style.opacity = redoStack.length === 0 ? '0.5' : '1';
+}
+
+function restoreEventListeners() {
+    // Re-attach event listeners to canvas elements after undo/redo
+    const canvasElements = document.querySelectorAll('.canvas-element');
+    canvasElements.forEach(element => {
+        element.addEventListener('click', () => selectElement(element));
+        element.addEventListener('dblclick', () => {
+            saveCanvasState();
+            element.remove();
+            updateCanvasElements();
+            showNotification('Element deleted');
+        });
+    });
+}
+
+function updateCanvasElements() {
+    canvasElements = Array.from(document.querySelectorAll('.canvas-element'));
+}
+
 // AI Tools Functionality
 function initializeAITools() {
     initializeContentGeneration();
@@ -305,7 +469,7 @@ function initializeContentGeneration() {
     });
     
     insertBtn.addEventListener('click', () => {
-        showNotification('Content inserted into website editor!');
+        insertAIContentToEditor();
     });
 }
 
@@ -391,7 +555,13 @@ function generateSampleImages(prompt, style) {
             
             // Highlight selected image
             imageContainer.style.borderColor = '#667eea';
-            showNotification('Image selected - Click to insert into editor');
+            
+            // Add double-click to insert
+            imageContainer.addEventListener('dblclick', () => {
+                insertAIImageToEditor(imageContainer);
+            });
+            
+            showNotification('Image selected - Double-click to insert into editor');
         });
         
         gallery.appendChild(imageContainer);
@@ -448,7 +618,120 @@ function performSEOAnalysis(keywords) {
         .join('');
 }
 
-// Utility Functions
+// AI Integration Functions
+function insertAIContentToEditor() {
+    const contentOutput = document.getElementById('content-output');
+    const content = contentOutput.textContent || contentOutput.innerHTML;
+    
+    if (!content || content.trim() === 'Generated content will appear here...') {
+        showNotification('No content to insert');
+        return;
+    }
+    
+    // Switch to editor screen if not already there
+    if (currentScreen !== 'editor') {
+        switchScreen('editor');
+    }
+    
+    // Create a text element with the AI content
+    setTimeout(() => {
+        saveCanvasState();
+        const canvas = document.getElementById('website-canvas');
+        const placeholder = canvas.querySelector('.canvas-placeholder');
+        
+        // Remove placeholder if it exists
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        // Create new text element with AI content
+        const element = document.createElement('div');
+        element.className = 'canvas-element';
+        element.style.position = 'absolute';
+        element.style.left = '50px';
+        element.style.top = '50px';
+        element.style.padding = '15px';
+        element.style.border = '1px solid #ccc';
+        element.style.borderRadius = '4px';
+        element.style.background = 'white';
+        element.style.cursor = 'move';
+        element.style.maxWidth = '400px';
+        element.setAttribute('data-element-type', 'text');
+        element.setAttribute('data-element-id', 'element-' + Date.now());
+        
+        // Set the AI-generated content
+        element.innerHTML = `<div>${content}</div>`;
+        
+        // Add event listeners
+        element.addEventListener('click', () => selectElement(element));
+        element.addEventListener('dblclick', () => {
+            saveCanvasState();
+            element.remove();
+            updateCanvasElements();
+            showNotification('Element deleted');
+        });
+        
+        canvas.appendChild(element);
+        updateCanvasElements();
+        
+        showNotification('AI content inserted into editor!');
+    }, 500);
+}
+
+function insertAIImageToEditor(imageElement) {
+    // Switch to editor screen if not already there
+    if (currentScreen !== 'editor') {
+        switchScreen('editor');
+    }
+    
+    // Create an image element in the editor
+    setTimeout(() => {
+        saveCanvasState();
+        const canvas = document.getElementById('website-canvas');
+        const placeholder = canvas.querySelector('.canvas-placeholder');
+        
+        // Remove placeholder if it exists
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        // Create new image element
+        const element = document.createElement('div');
+        element.className = 'canvas-element';
+        element.style.position = 'absolute';
+        element.style.left = '50px';
+        element.style.top = '50px';
+        element.style.padding = '10px';
+        element.style.border = '1px solid #ccc';
+        element.style.borderRadius = '4px';
+        element.style.background = 'white';
+        element.style.cursor = 'move';
+        element.setAttribute('data-element-type', 'image');
+        element.setAttribute('data-element-id', 'element-' + Date.now());
+        
+        // Set placeholder image with AI style info
+        element.innerHTML = `<div style="width: 200px; height: 150px; background: linear-gradient(45deg, #f0f0f0, #e0e0e0); display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+            <div style="text-align: center; color: #666;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🖼️</div>
+                <div style="font-size: 0.8rem;">AI Generated Image</div>
+            </div>
+        </div>`;
+        
+        // Add event listeners
+        element.addEventListener('click', () => selectElement(element));
+        element.addEventListener('dblclick', () => {
+            saveCanvasState();
+            element.remove();
+            updateCanvasElements();
+            showNotification('Element deleted');
+        });
+        
+        canvas.appendChild(element);
+        updateCanvasElements();
+        
+        showNotification('AI image inserted into editor!');
+    }, 500);
+}
 function showNotification(message) {
     // Create notification element
     const notification = document.createElement('div');
@@ -488,8 +771,94 @@ function showNotification(message) {
 window.updateElementStyle = function(elementId, property, value) {
     const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
     if (selectedElement) {
+        saveCanvasState();
         selectedElement.style[property] = value;
         showNotification(`Updated ${property}`);
+    }
+};
+
+// Animation functions
+window.applyAnimation = function(elementId, animationType) {
+    const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+    if (selectedElement && animationType) {
+        selectedElement.style.animation = 'none';
+        selectedElement.offsetHeight; // Force reflow
+        selectedElement.style.animation = `${animationType} 1s ease-in-out`;
+        selectedElement.setAttribute('data-animation', animationType);
+        showNotification(`Applied ${animationType} animation`);
+    }
+};
+
+window.setAnimationDuration = function(elementId, duration) {
+    const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+    if (selectedElement) {
+        const currentAnimation = selectedElement.getAttribute('data-animation');
+        if (currentAnimation) {
+            selectedElement.style.animation = `${currentAnimation} ${duration}s ease-in-out`;
+        }
+        showNotification(`Animation duration set to ${duration}s`);
+    }
+};
+
+window.setAnimationDelay = function(elementId, delay) {
+    const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+    if (selectedElement) {
+        selectedElement.style.animationDelay = `${delay}s`;
+        showNotification(`Animation delay set to ${delay}s`);
+    }
+};
+
+window.previewAnimation = function(elementId) {
+    const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+    if (selectedElement) {
+        const currentAnimation = selectedElement.getAttribute('data-animation');
+        if (currentAnimation) {
+            selectedElement.style.animation = 'none';
+            selectedElement.offsetHeight; // Force reflow
+            selectedElement.style.animation = `${currentAnimation} 1s ease-in-out`;
+            showNotification('Animation previewed');
+        } else {
+            showNotification('No animation selected');
+        }
+    }
+};
+
+window.duplicateElement = function(elementId) {
+    const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+    if (selectedElement) {
+        saveCanvasState();
+        const clone = selectedElement.cloneNode(true);
+        clone.style.left = (parseInt(selectedElement.style.left) + 20) + 'px';
+        clone.style.top = (parseInt(selectedElement.style.top) + 20) + 'px';
+        clone.setAttribute('data-element-id', 'element-' + Date.now());
+        
+        // Re-attach event listeners
+        clone.addEventListener('click', () => selectElement(clone));
+        clone.addEventListener('dblclick', () => {
+            saveCanvasState();
+            clone.remove();
+            updateCanvasElements();
+            showNotification('Element deleted');
+        });
+        
+        selectedElement.parentNode.appendChild(clone);
+        updateCanvasElements();
+        showNotification('Element duplicated');
+    }
+};
+
+window.deleteElement = function(elementId) {
+    const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+    if (selectedElement) {
+        saveCanvasState();
+        selectedElement.remove();
+        updateCanvasElements();
+        
+        // Clear properties panel
+        const propertiesContent = document.querySelector('.properties-content');
+        propertiesContent.innerHTML = '<p>Select an element to edit its properties</p>';
+        
+        showNotification('Element deleted');
     }
 };
 
@@ -499,16 +868,35 @@ document.addEventListener('keydown', (e) => {
         switch (e.key) {
             case 'z':
                 e.preventDefault();
-                showNotification('Undo (Ctrl+Z)');
+                if (e.shiftKey) {
+                    performRedo();
+                } else {
+                    performUndo();
+                }
                 break;
             case 'y':
                 e.preventDefault();
-                showNotification('Redo (Ctrl+Y)');
+                performRedo();
                 break;
             case 's':
                 e.preventDefault();
                 showNotification('Auto-save enabled');
                 break;
+            case 'd':
+                e.preventDefault();
+                const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+                if (selectedElement) {
+                    window.duplicateElement();
+                }
+                break;
+        }
+    }
+    
+    // Delete key for removing selected element
+    if (e.key === 'Delete') {
+        const selectedElement = document.querySelector('.canvas-element[style*="border: 2px solid"]');
+        if (selectedElement) {
+            window.deleteElement();
         }
     }
 });
