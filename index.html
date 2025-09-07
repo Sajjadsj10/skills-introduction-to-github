@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Builder - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h1>WebBuilder Pro</h1>
+        </div>
+        <div class="nav-links">
+            <button class="nav-btn active" data-screen="dashboard">Dashboard</button>
+            <button class="nav-btn" data-screen="editor">Website Editor</button>
+            <button class="nav-btn" data-screen="ai-tools">AI Tools & SEO</button>
+        </div>
+    </nav>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard" class="screen active">
+        <div class="container">
+            <header class="screen-header">
+                <h2>Dashboard - Central Command Center</h2>
+                <p>Manage your website projects and access creation tools</p>
+            </header>
+            
+            <div class="dashboard-content">
+                <!-- Create New Website CTA -->
+                <div class="cta-section">
+                    <button class="btn-primary large" id="create-website-btn">
+                        <span class="btn-icon">+</span>
+                        Create New Website
+                    </button>
+                </div>
+
+                <!-- Project Cards -->
+                <div class="projects-section">
+                    <h3>Your Projects</h3>
+                    <div class="project-grid">
+                        <div class="project-card">
+                            <div class="project-status active">Live</div>
+                            <h4>My Portfolio Site</h4>
+                            <p>Personal portfolio website</p>
+                            <div class="project-meta">
+                                <span>Last edited: 2 days ago</span>
+                                <span>Views: 1,234</span>
+                            </div>
+                            <div class="project-actions">
+                                <button class="btn-secondary" data-action="edit">Edit</button>
+                                <button class="btn-secondary" data-action="analytics">Analytics</button>
+                            </div>
+                        </div>
+                        
+                        <div class="project-card">
+                            <div class="project-status draft">Draft</div>
+                            <h4>Business Landing Page</h4>
+                            <p>Corporate website template</p>
+                            <div class="project-meta">
+                                <span>Last edited: 1 week ago</span>
+                                <span>Views: 0</span>
+                            </div>
+                            <div class="project-actions">
+                                <button class="btn-secondary" data-action="edit">Edit</button>
+                                <button class="btn-secondary" data-action="publish">Publish</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Access Tools -->
+                <div class="quick-access">
+                    <h3>Quick Access</h3>
+                    <div class="tool-grid">
+                        <div class="tool-card" data-tool="editor">
+                            <div class="tool-icon">🎨</div>
+                            <h4>Website Editor</h4>
+                            <p>Drag-and-drop editor with code access</p>
+                        </div>
+                        <div class="tool-card" data-tool="ai-tools">
+                            <div class="tool-icon">🤖</div>
+                            <h4>AI Tools & SEO</h4>
+                            <p>AI content generation and SEO optimization</p>
+                        </div>
+                        <div class="tool-card" data-tool="analytics">
+                            <div class="tool-icon">📊</div>
+                            <h4>Analytics</h4>
+                            <p>Website performance metrics</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Website Editor Screen -->
+    <div id="editor" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <h2>Website Editor - Creation & Customization Core</h2>
+                <p>Build and customize your website with our powerful editor</p>
+            </header>
+            
+            <div class="editor-content">
+                <!-- Editor Toolbar -->
+                <div class="editor-toolbar">
+                    <div class="toolbar-section">
+                        <button class="btn-secondary" id="undo-btn">↶ Undo</button>
+                        <button class="btn-secondary" id="redo-btn">↷ Redo</button>
+                    </div>
+                    <div class="toolbar-section">
+                        <select class="device-selector">
+                            <option value="desktop">Desktop</option>
+                            <option value="tablet">Tablet</option>
+                            <option value="mobile">Mobile</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-section">
+                        <button class="btn-primary" id="publish-btn">Publish</button>
+                        <button class="btn-secondary" id="preview-btn">Preview</button>
+                    </div>
+                </div>
+
+                <!-- Editor Layout -->
+                <div class="editor-layout">
+                    <!-- Element Panel -->
+                    <div class="side-panel left">
+                        <h3>Elements</h3>
+                        <div class="element-list">
+                            <div class="element-item" draggable="true" data-element="text">
+                                <span class="element-icon">T</span>
+                                Text Block
+                            </div>
+                            <div class="element-item" draggable="true" data-element="image">
+                                <span class="element-icon">🖼️</span>
+                                Image
+                            </div>
+                            <div class="element-item" draggable="true" data-element="button">
+                                <span class="element-icon">🔘</span>
+                                Button
+                            </div>
+                            <div class="element-item" draggable="true" data-element="container">
+                                <span class="element-icon">📦</span>
+                                Container
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Area -->
+                    <div class="canvas-area">
+                        <div class="canvas" id="website-canvas">
+                            <div class="canvas-placeholder">
+                                <h3>Drag elements here to start building</h3>
+                                <p>Use the elements panel on the left to add content</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Properties Panel -->
+                    <div class="side-panel right">
+                        <h3>Properties</h3>
+                        <div class="properties-content">
+                            <p>Select an element to edit its properties</p>
+                            <div class="property-group" style="display: none;">
+                                <label>Text Content:</label>
+                                <textarea class="property-input" placeholder="Enter text..."></textarea>
+                            </div>
+                            <div class="property-group" style="display: none;">
+                                <label>Background Color:</label>
+                                <input type="color" class="property-input" value="#ffffff">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Editor Toggle -->
+                <div class="code-editor-section">
+                    <button class="btn-secondary" id="toggle-code-editor">Show Code Editor</button>
+                    <div class="code-editor" id="code-editor" style="display: none;">
+                        <textarea placeholder="HTML/CSS/JS code will appear here...">
+&lt;div class="website-container"&gt;
+    &lt;h1&gt;Welcome to your website!&lt;/h1&gt;
+    &lt;p&gt;Start building amazing content.&lt;/p&gt;
+&lt;/div&gt;</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Tools & SEO Screen -->
+    <div id="ai-tools" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <h2>AI Tools & SEO - Intelligent Enhancement Suite</h2>
+                <p>Enhance your website with AI-powered tools and SEO optimization</p>
+            </header>
+            
+            <div class="ai-tools-content">
+                <!-- AI Content Generation -->
+                <div class="tool-section">
+                    <h3>AI Content Writing</h3>
+                    <div class="ai-content-tool">
+                        <div class="input-group">
+                            <label>Content Type:</label>
+                            <select class="content-type-selector">
+                                <option value="headline">Headlines</option>
+                                <option value="paragraph">Paragraphs</option>
+                                <option value="product-desc">Product Descriptions</option>
+                                <option value="blog-post">Blog Posts</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Topic/Keywords:</label>
+                            <input type="text" class="topic-input" placeholder="Enter your topic or keywords...">
+                        </div>
+                        <button class="btn-primary" id="generate-content-btn">Generate Content</button>
+                        <div class="generated-content">
+                            <h4>Generated Content:</h4>
+                            <div class="content-output" id="content-output">
+                                <p><em>Generated content will appear here...</em></p>
+                            </div>
+                            <button class="btn-secondary" id="insert-content-btn" style="display: none;">Insert into Website</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Image Generation -->
+                <div class="tool-section">
+                    <h3>AI Image Generation</h3>
+                    <div class="ai-image-tool">
+                        <div class="input-group">
+                            <label>Image Prompt:</label>
+                            <textarea class="image-prompt" placeholder="Describe the image you want to generate..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Style:</label>
+                            <select class="image-style-selector">
+                                <option value="realistic">Realistic</option>
+                                <option value="artistic">Artistic</option>
+                                <option value="cartoon">Cartoon</option>
+                                <option value="minimalist">Minimalist</option>
+                            </select>
+                        </div>
+                        <button class="btn-primary" id="generate-image-btn">Generate Image</button>
+                        <div class="generated-images">
+                            <h4>Generated Images:</h4>
+                            <div class="image-gallery" id="image-gallery">
+                                <div class="image-placeholder">
+                                    <p>Generated images will appear here...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEO Optimization -->
+                <div class="tool-section">
+                    <h3>SEO Optimization</h3>
+                    <div class="seo-tool">
+                        <div class="input-group">
+                            <label>Page URL:</label>
+                            <input type="url" class="page-url" placeholder="https://yourwebsite.com/page">
+                        </div>
+                        <div class="input-group">
+                            <label>Target Keywords:</label>
+                            <input type="text" class="keywords-input" placeholder="Enter target keywords separated by commas">
+                        </div>
+                        <button class="btn-primary" id="analyze-seo-btn">Analyze SEO</button>
+                        <div class="seo-results">
+                            <h4>SEO Analysis:</h4>
+                            <div class="seo-metrics" id="seo-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">SEO Score:</span>
+                                    <span class="metric-value">--</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Keyword Density:</span>
+                                    <span class="metric-value">--</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Meta Description:</span>
+                                    <span class="metric-value">--</span>
+                                </div>
+                            </div>
+                            <div class="seo-suggestions" id="seo-suggestions">
+                                <h5>Suggestions:</h5>
+                                <ul>
+                                    <li><em>Run analysis to see suggestions...</em></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
