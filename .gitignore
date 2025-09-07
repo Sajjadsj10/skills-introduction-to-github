@@ -42,3 +42,9 @@ Thumbs.db
 node_modules/
 .env
 *.log
+
+# React build artifacts #
+########################
+build/
+.npm
+.eslintcache
